@@ -1,0 +1,36 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+// This is your blueprint for the database
+
+generator client {
+  provider             = "prisma-client-py"
+  recursive_type_depth = 5
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id    Int     @id @default(autoincrement())
+  email String  @unique
+  name  String?
+  logs  DailyLog[]
+}
+
+model DailyLog {
+  id          Int      @id @default(autoincrement())
+  date        DateTime @default(now())
+  bbtTemp     Float    // For the Body Temperature
+  lhRatio     Float    // For the AI-detected T/C ratio
+  verdict     String   // e.g., "False Surge", "Ovulation Confirmed"
+  precautions String   // The advice given to the user
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
+}
