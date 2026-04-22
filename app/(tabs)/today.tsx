@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import {
   View,
   Text,
@@ -49,6 +49,11 @@ export default function Today() {
   const cycleDay = useStore((s) => s.cycleDay);
   const cycleLength = useStore((s) => s.cycleLength);
   const addLog = useStore((s) => s.addLog);
+  const setTutorialSpot = useStore((s) => s.setTutorialSpot);
+
+  const ringRef = useRef<View>(null);
+  const saheliCardRef = useRef<View>(null);
+  const quickLogRef = useRef<View>(null);
 
   const scrollY = useSharedValue(0);
   const scrollHandler = useAnimatedScrollHandler({
@@ -94,11 +99,28 @@ export default function Today() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 140 }}
         >
-          <Animated.View style={[styles.ringWrap, ringStyle]}>
-            <PhaseRing phase={phase} day={cycleDay} cycleLength={cycleLength} size={280} />
-          </Animated.View>
+          <View
+            ref={ringRef}
+            onLayout={() => {
+              ringRef.current?.measureInWindow((x, y, w, h) => {
+                setTutorialSpot('ring', { cx: x + w / 2, cy: y + h / 2, r: Math.min(w, h) / 2 });
+              });
+            }}
+          >
+            <Animated.View style={[styles.ringWrap, ringStyle]}>
+              <PhaseRing phase={phase} day={cycleDay} cycleLength={cycleLength} size={280} />
+            </Animated.View>
+          </View>
 
           {/* Saheli's narrative */}
+          <View
+            ref={saheliCardRef}
+            onLayout={() => {
+              saheliCardRef.current?.measureInWindow((x, y, w, h) => {
+                setTutorialSpot('saheliCard', { cx: x + w / 2, cy: y + h / 2, r: w / 2 });
+              });
+            }}
+          >
           <GlassCard style={styles.narrativeCard}>
             <View style={styles.narrativeHeader}>
               <View style={[styles.sahiAvatar, { backgroundColor: p.secondary }]}>
@@ -118,20 +140,30 @@ export default function Today() {
               </Text>
             </Pressable>
           </GlassCard>
+          </View>
 
           {/* Quick log strip */}
           <Text style={styles.sectionLabel}>QUICK LOG</Text>
-          <View style={styles.quickRow}>
-            {QUICK_TILES.map((t) => (
-              <Pressable
-                key={t.id}
-                style={styles.quickTile}
-                onPress={() => handleQuickTap(t.key)}
-              >
-                <Text style={{ fontSize: 24 }}>{t.emoji}</Text>
-                <Text style={styles.quickLabel}>{t.label}</Text>
-              </Pressable>
-            ))}
+          <View
+            ref={quickLogRef}
+            onLayout={() => {
+              quickLogRef.current?.measureInWindow((x, y, w, h) => {
+                setTutorialSpot('quickLog', { cx: x + w / 2, cy: y + h / 2, r: w / 2 });
+              });
+            }}
+          >
+            <View style={styles.quickRow}>
+              {QUICK_TILES.map((t) => (
+                <Pressable
+                  key={t.id}
+                  style={styles.quickTile}
+                  onPress={() => handleQuickTap(t.key)}
+                >
+                  <Text style={{ fontSize: 24 }}>{t.emoji}</Text>
+                  <Text style={styles.quickLabel}>{t.label}</Text>
+                </Pressable>
+              ))}
+            </View>
           </View>
 
           {/* Recommendations */}

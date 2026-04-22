@@ -44,13 +44,13 @@ export default function Admin() {
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
         {/* Header */}
         <View style={s.header}>
-          <View>
+          <View style={s.headerLeft}>
             <View style={s.badge}>
               <Text style={s.badgeText}>ADMIN</Text>
             </View>
-            <Text style={s.heading}>Operations</Text>
+            <Text style={s.heading} numberOfLines={1}>Operations</Text>
           </View>
-          <View style={{ flexDirection: 'row', gap: 10 }}>
+          <View style={s.headerBtns}>
             <Pressable onPress={() => router.back()} style={s.headerBtn}>
               <Text style={s.headerBtnText}>← Back</Text>
             </Pressable>
@@ -61,15 +61,26 @@ export default function Admin() {
         </View>
 
         {/* Tabs */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.tabRow}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={s.tabRow}
+          bounces={false}
+          overScrollMode="never"
+        >
           {TABS.map((t) => (
             <Pressable
               key={t.id}
               style={[s.tab, tab === t.id && s.tabActive]}
               onPress={() => setTab(t.id)}
             >
-              <Text style={{ fontSize: 14, marginRight: 6 }}>{t.emoji}</Text>
-              <Text style={[s.tabLabel, tab === t.id && s.tabLabelActive]}>{t.label}</Text>
+              <Text style={{ fontSize: 14, marginRight: 5 }}>{t.emoji}</Text>
+              <Text
+                style={[s.tabLabel, tab === t.id && s.tabLabelActive]}
+                numberOfLines={1}
+              >
+                {t.label}
+              </Text>
             </Pressable>
           ))}
         </ScrollView>
@@ -383,17 +394,35 @@ function ComplianceTab() {
 
 /* ---- Styles ---- */
 const s = StyleSheet.create({
-  header: { flexDirection:'row', justifyContent:'space-between', alignItems:'center', paddingHorizontal:PAD, paddingVertical:12, paddingLeft:PAD, paddingRight:PAD },
-  badge: { backgroundColor:Colors.templeMaroon, paddingHorizontal:10, paddingVertical:4, borderRadius:999, marginBottom:6 },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: PAD,
+    paddingVertical: 12,
+  },
+  headerLeft: { flex: 1, marginRight: 10 },
+  badge: { backgroundColor:Colors.templeMaroon, paddingHorizontal:10, paddingVertical:4, borderRadius:999, marginBottom:6, alignSelf: 'flex-start' },
   badgeText: { color:Colors.saffronGold, fontSize:10, fontWeight:'800', letterSpacing:2 },
-  heading: { ...Typography.h1, color:Colors.templeMaroon, fontStyle:'italic', fontWeight:'300' },
-  headerBtn: { paddingHorizontal:12, paddingVertical:7, borderRadius:Radius.pill, backgroundColor:'rgba(123,45,63,0.12)' },
-  headerBtnText: { color:Colors.templeMaroon, fontSize:12, fontWeight:'700' },
-  tabRow: { paddingHorizontal:PAD, paddingVertical:10, gap:8 },
-  tab: { flexDirection:'row', alignItems:'center', paddingHorizontal:14, paddingVertical:8, borderRadius:Radius.pill, backgroundColor:'rgba(255,255,255,0.6)', borderWidth:1, borderColor:'rgba(123,45,63,0.12)' },
-  tabActive: { backgroundColor:Colors.templeMaroon },
-  tabLabel: { color:Colors.textPrimary, fontWeight:'600', fontSize:13 },
-  tabLabelActive: { color:Colors.lotusMist },
+  heading: { ...Typography.h2, color:Colors.templeMaroon, fontStyle:'italic', fontWeight:'300' },
+  headerBtns: { flexDirection: 'row', gap: 8, flexShrink: 0 },
+  headerBtn: { paddingHorizontal:14, paddingVertical:8, borderRadius:Radius.pill, backgroundColor:'rgba(123,45,63,0.12)' },
+  headerBtnText: { color:Colors.templeMaroon, fontSize:13, fontWeight:'700' },
+  tabRow: { paddingHorizontal: PAD, paddingVertical: 10, gap: 8 },
+  tab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderRadius: Radius.pill,
+    backgroundColor: 'rgba(255,255,255,0.6)',
+    borderWidth: 1,
+    borderColor: 'rgba(123,45,63,0.12)',
+    flexShrink: 0,
+  },
+  tabActive: { backgroundColor: Colors.templeMaroon },
+  tabLabel: { color: Colors.textPrimary, fontWeight: '600', fontSize: 13, flexShrink: 0 },
+  tabLabelActive: { color: Colors.lotusMist },
   statsGrid: { flexDirection:'row', flexWrap:'wrap', gap:10, marginTop:6 },
   statCard: { width:(W-2*PAD-10)/2, backgroundColor:'rgba(255,245,247,0.85)', borderRadius:Radius.lg, padding:14, borderWidth:1, borderColor:'rgba(255,255,255,0.7)', ...Shadows.soft },
   statValue: { fontSize:24, fontWeight:'700', color:Colors.templeMaroon, marginTop:8 },

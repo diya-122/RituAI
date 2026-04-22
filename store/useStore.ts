@@ -93,6 +93,14 @@ type State = {
   theme: 'auto' | 'day' | 'night';
   reduceMotion: boolean;
 
+  // Tutorial spotlight positions (measured at runtime)
+  tutorialSpots: {
+    ring: { cx: number; cy: number; r: number } | null;
+    saheliCard: { cx: number; cy: number; r: number } | null;
+    quickLog: { cx: number; cy: number; r: number } | null;
+    fab: { cx: number; cy: number; r: number } | null;
+  };
+
   // Actions
   login: (u: { name: string; email: string; phone?: string }) => void;
   signup: (u: { name: string; email: string; phone?: string }) => void;
@@ -104,6 +112,10 @@ type State = {
   addScan: (scan: SkinScan) => void;
   addChatMessage: (msg: ChatMessage) => void;
   toggleDisguise: () => void;
+  setTutorialSpot: (
+    key: 'ring' | 'saheliCard' | 'quickLog' | 'fab',
+    spot: { cx: number; cy: number; r: number },
+  ) => void;
 };
 
 const mockLogs = (): DailyLog[] => {
@@ -184,6 +196,8 @@ export const useStore = create<State>((set) => ({
   theme: 'auto',
   reduceMotion: false,
 
+  tutorialSpots: { ring: null, saheliCard: null, quickLog: null, fab: null },
+
   login: (u) => {
     const isAdmin =
       u.email.toLowerCase() === 'admin@ritualai.in' ||
@@ -247,4 +261,7 @@ export const useStore = create<State>((set) => ({
   addChatMessage: (msg) => set((s) => ({ chat: [...s.chat, msg] })),
 
   toggleDisguise: () => set((s) => ({ disguiseMode: !s.disguiseMode })),
+
+  setTutorialSpot: (key, spot) =>
+    set((s) => ({ tutorialSpots: { ...s.tutorialSpots, [key]: spot } })),
 }));

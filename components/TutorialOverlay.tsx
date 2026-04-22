@@ -7,49 +7,59 @@ import { useStore } from '@/store/useStore';
 
 const { width: W, height: H } = Dimensions.get('window');
 
+type Spot = { cx: number; cy: number; r: number };
+
 type Step = {
   title: string;
   body: string;
-  spotlight: { cx: number; cy: number; r: number };
+  spotlight: Spot;
   bubblePosition: 'top' | 'bottom';
 };
 
-const STEPS: Step[] = [
-  {
-    title: 'This is your phase ring',
-    body: 'It tells you exactly where you are in your cycle. The color shifts as your body shifts.',
-    spotlight: { cx: W / 2, cy: H * 0.38, r: 170 },
-    bubblePosition: 'bottom',
-  },
-  {
-    title: 'Log your day in seconds',
-    body: 'One tap on each tile. Flow, mood, energy, cramps — takes less than 30 seconds.',
-    spotlight: { cx: W / 2, cy: H * 0.62, r: 90 },
-    bubblePosition: 'top',
-  },
-  {
-    title: 'Your daily ritual from Saheli',
-    body: 'Personalized insight every morning, written in plain language — not medical jargon.',
-    spotlight: { cx: W / 2, cy: H * 0.74, r: 100 },
-    bubblePosition: 'top',
-  },
-  {
-    title: 'Tap the gold circle to scan',
-    body: 'Your camera becomes hormonal intelligence. Every selfie is auto-linked to your cycle day.',
-    spotlight: { cx: W / 2, cy: H - 70, r: 60 },
-    bubblePosition: 'top',
-  },
-  {
-    title: 'You are ready.',
-    body: 'Whenever you feel lost, tap the 💬 tab and I am here. This is your space now.',
-    spotlight: { cx: W / 2, cy: H / 2, r: 200 },
-    bubblePosition: 'bottom',
-  },
-];
+function buildSteps(spots: {
+  ring: Spot | null;
+  saheliCard: Spot | null;
+  quickLog: Spot | null;
+  fab: Spot | null;
+}): Step[] {
+  return [
+    {
+      title: 'This is your phase ring',
+      body: 'It tells you exactly where you are in your cycle. The color shifts as your body shifts.',
+      spotlight: spots.ring ?? { cx: W / 2, cy: H * 0.28, r: 148 },
+      bubblePosition: 'bottom',
+    },
+    {
+      title: 'Log your day in seconds',
+      body: 'One tap on each tile. Flow, mood, energy, cramps — takes less than 30 seconds.',
+      spotlight: spots.quickLog ?? { cx: W / 2, cy: H * 0.60, r: 80 },
+      bubblePosition: 'top',
+    },
+    {
+      title: "Saheli's daily note",
+      body: 'Personalized insight every morning, written in plain language — not medical jargon.',
+      spotlight: spots.saheliCard ?? { cx: W / 2, cy: H * 0.46, r: W / 2 - 8 },
+      bubblePosition: 'bottom',
+    },
+    {
+      title: 'Tap the gold circle to scan',
+      body: 'Your camera becomes hormonal intelligence. Every selfie is auto-linked to your cycle day.',
+      spotlight: spots.fab ?? { cx: W / 2, cy: H - 52, r: 42 },
+      bubblePosition: 'top',
+    },
+    {
+      title: 'You are ready.',
+      body: 'Whenever you feel lost, tap the 💬 tab and I am here. This is your space now.',
+      spotlight: { cx: W / 2, cy: H / 2, r: 200 },
+      bubblePosition: 'bottom',
+    },
+  ];
+}
 
 export function TutorialOverlay() {
   const hasSeenTutorial = useStore((s) => s.hasSeenTutorial);
   const markTutorialSeen = useStore((s) => s.markTutorialSeen);
+  const tutorialSpots = useStore((s) => s.tutorialSpots);
   const [visible, setVisible] = useState(false);
   const [step, setStep] = useState(0);
 
@@ -62,11 +72,12 @@ export function TutorialOverlay() {
 
   if (!visible) return null;
 
-  const s = STEPS[step];
+  const steps = buildSteps(tutorialSpots);
+  const s = steps[step];
 
   const advance = () => {
     try { Haptics.selectionAsync(); } catch {}
-    if (step < STEPS.length - 1) {
+    if (step < steps.length - 1) {
       setStep(step + 1);
     } else {
       markTutorialSeen();
@@ -83,10 +94,15 @@ export function TutorialOverlay() {
     if (step > 0) setStep(step - 1);
   };
 
-  const bubbleTop =
-    s.bubblePosition === 'top'
-      ? Math.max(40, s.spotlight.cy - s.spotlight.r - 220)
-      : Math.min(H - 280, s.spotlight.cy + s.spotlight.r + 24);
+  // Position bubble so it doesn't overlap the spotlight and stays on screen
+  const BUBBLE_HEIGHT = 230;
+  const GAP = 20;
+  let bubbleTop: number;
+  if (s.bubblePosition === 'top') {
+    bubbleTop = Math.max(48, s.spotlight.cy - s.spotlight.r - GAP - BUBBLE_HEIGHT);
+  } else {
+    bubbleTop = Math.min(H - BUBBLE_HEIGHT - 20, s.spotlight.cy + s.spotlight.r + GAP);
+  }
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
@@ -99,31 +115,18 @@ export function TutorialOverlay() {
             </Mask>
           </Defs>
           <Rect
-            x={0}
-            y={0}
-            width={W}
-            height={H}
+            x={0} y={0} width={W} height={H}
             fill={Colors.midnightPlum}
             opacity={0.82}
             mask="url(#spotlight)"
           />
           <Circle
-            cx={s.spotlight.cx}
-            cy={s.spotlight.cy}
-            r={s.spotlight.r + 6}
-            stroke={Colors.saffronGold}
-            strokeWidth={2}
-            fill="none"
-            opacity={0.8}
+            cx={s.spotlight.cx} cy={s.spotlight.cy} r={s.spotlight.r + 5}
+            stroke={Colors.saffronGold} strokeWidth={2} fill="none" opacity={0.85}
           />
           <Circle
-            cx={s.spotlight.cx}
-            cy={s.spotlight.cy}
-            r={s.spotlight.r + 14}
-            stroke={Colors.saffronGold}
-            strokeWidth={1}
-            fill="none"
-            opacity={0.4}
+            cx={s.spotlight.cx} cy={s.spotlight.cy} r={s.spotlight.r + 13}
+            stroke={Colors.saffronGold} strokeWidth={1} fill="none" opacity={0.35}
           />
         </Svg>
       </Pressable>
@@ -139,14 +142,15 @@ export function TutorialOverlay() {
         <Text style={styles.bubbleBody}>{s.body}</Text>
 
         <View style={styles.progress}>
-          {STEPS.map((_, i) => (
+          {steps.map((_, i) => (
             <View
               key={i}
               style={[
                 styles.progressDot,
                 {
                   width: i === step ? 22 : 6,
-                  backgroundColor: i === step ? Colors.saffronGold : 'rgba(255,255,255,0.4)',
+                  backgroundColor:
+                    i === step ? Colors.saffronGold : 'rgba(255,255,255,0.35)',
                 },
               ]}
             />
@@ -165,7 +169,7 @@ export function TutorialOverlay() {
           <View style={{ flex: 1 }} />
           <Pressable onPress={advance} style={styles.nextBtn}>
             <Text style={styles.nextBtnText}>
-              {step === STEPS.length - 1 ? 'Begin' : 'Next →'}
+              {step === steps.length - 1 ? 'Begin' : 'Next →'}
             </Text>
           </Pressable>
         </View>
@@ -179,7 +183,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 20,
     right: 20,
-    backgroundColor: 'rgba(45,27,46,0.96)',
+    backgroundColor: 'rgba(45,27,46,0.97)',
     borderRadius: 24,
     padding: 20,
     borderWidth: 1,
@@ -188,6 +192,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 20,
     shadowOffset: { width: 0, height: 0 },
+    elevation: 12,
   },
   sahiHeader: {
     flexDirection: 'row',

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -15,6 +15,7 @@ import Animated, {
   interpolate,
 } from 'react-native-reanimated';
 import { Colors, Gradients, Shadows } from '@/theme';
+import { useStore } from '@/store/useStore';
 
 const TABS = [
   { route: '/(tabs)/today', label: 'Today', icon: HomeIcon },
@@ -27,6 +28,8 @@ const TABS = [
 export function CustomTabBar() {
   const router = useRouter();
   const pathname = usePathname();
+  const setTutorialSpot = useStore((s) => s.setTutorialSpot);
+  const fabRef = useRef<View>(null);
 
   const pulse = useSharedValue(0);
   React.useEffect(() => {
@@ -69,7 +72,15 @@ export function CustomTabBar() {
                 style={styles.fabWrap}
               >
                 <Animated.View style={[styles.fabGlow, pulseStyle]} />
-                <View style={styles.fab}>
+                <View
+                  ref={fabRef}
+                  style={styles.fab}
+                  onLayout={() => {
+                    fabRef.current?.measureInWindow((x, y, w, h) => {
+                      setTutorialSpot('fab', { cx: x + w / 2, cy: y + h / 2, r: w / 2 + 8 });
+                    });
+                  }}
+                >
                   <LinearGradient
                     colors={Gradients.goldShimmer as unknown as readonly [string, string, string]}
                     style={StyleSheet.absoluteFill}

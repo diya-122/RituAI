@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TextInput, StyleSheet, Pressable,
   KeyboardAvoidingView, Platform, ScrollView, Dimensions,
+  Alert, ActivityIndicator,
 } from 'react-native';
 import Animated, {
   useSharedValue, useAnimatedStyle, withTiming, withDelay,
@@ -11,6 +12,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import Svg, { Path, Circle, Line } from 'react-native-svg';
 
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { Doorway } from '@/components/illustrations/Doorway';
@@ -20,13 +22,39 @@ import { useStore } from '@/store/useStore';
 
 const { height: H } = Dimensions.get('window');
 
+function EyeIcon({ visible }: { visible: boolean }) {
+  const c = 'rgba(255,245,247,0.55)';
+  if (visible) {
+    return (
+      <Svg width={20} height={20} viewBox="0 0 24 24">
+        <Path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke={c} strokeWidth={1.6} fill="none" />
+        <Circle cx={12} cy={12} r={3} stroke={c} strokeWidth={1.6} fill="none" />
+      </Svg>
+    );
+  }
+  return (
+    <Svg width={20} height={20} viewBox="0 0 24 24">
+      <Path
+        d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"
+        stroke={c} strokeWidth={1.6} fill="none" strokeLinecap="round"
+      />
+      <Line x1="1" y1="1" x2="23" y2="23" stroke={c} strokeWidth={1.6} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
 export default function Login() {
   const router = useRouter();
   const login = useStore((s) => s.login);
   const [step, setStep] = useState<'closed' | 'opening' | 'form'>('closed');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPass, setShowPass] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const [showAdminHint, setShowAdminHint] = useState(false);
+  const emailRef = useRef<TextInput>(null);
+  const passRef = useRef<TextInput>(null);
 
   const headerOp = useSharedValue(1);
   const formOp = useSharedValue(0);
@@ -49,25 +77,46 @@ export default function Login() {
       formOp.value = withTiming(1, { duration: 600 });
       formY.value = withSpring(0, { damping: 14, stiffness: 120 });
       try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch {}
+      setTimeout(() => emailRef.current?.focus(), 400);
     }, 900);
   };
 
-  const canSubmit = email.includes('@') && password.length >= 4;
+  const handleEmailChange = (v: string) => { setEmail(v); if (error) setError(''); };
+  const handlePassChange = (v: string) => { setPassword(v); if (error) setError(''); };
 
-  const handleLogin = () => {
-    if (!canSubmit) return;
+  const canSubmit = email.includes('@') && email.includes('.') && password.length >= 4;
+
+  const handleLogin = async () => {
+    if (!canSubmit || loading) return;
+    setLoading(true);
+    setError('');
     try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch {}
-    const isAdmin =
-      email.toLowerCase() === 'admin@ritualai.in' ||
-      email.toLowerCase() === 'admin@ritual.ai';
-    login({ name: isAdmin ? 'Admin' : 'Friend', email });
-    router.replace(isAdmin ? '/admin' : '/(tabs)/today');
+    await new Promise((r) => setTimeout(r, 500));
+    try {
+      const isAdmin =
+        email.toLowerCase() === 'admin@ritualai.in' ||
+        email.toLowerCase() === 'admin@ritual.ai';
+      login({ name: isAdmin ? 'Admin' : 'Friend', email });
+      router.replace(isAdmin ? '/admin' : '/(tabs)/today');
+    } catch {
+      setError('Something went wrong. Please try again.');
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = () => {
+    Alert.alert(
+      'Reset your password',
+      "We'll send a reset link to your email.\n\nFor demo access use:\nadmin@ritualai.in / admin123",
+      [{ text: 'Got it' }],
+    );
   };
 
   const headerStyle = useAnimatedStyle(() => ({ opacity: headerOp.value }));
   const doorWrapStyle = useAnimatedStyle(() => ({ transform: [{ scale: doorScale.value }] }));
   const formStyle = useAnimatedStyle(() => ({
-    opacity: formOp.value, transform: [{ translateY: formY.value }],
+    opacity: formOp.value,
+    transform: [{ translateY: formY.value }],
   }));
   const hintStyle = useAnimatedStyle(() => ({
     opacity: interpolate(hintOp.value, [0, 1], [0.3, 1]),
@@ -112,27 +161,73 @@ export default function Login() {
 
             {step === 'form' && (
               <Animated.View style={[styles.formWrap, formStyle]}>
-                <TextInput
-                  value={email} onChangeText={setEmail}
-                  placeholder="Email"
-                  placeholderTextColor="rgba(255,245,247,0.4)"
-                  style={styles.input}
-                  keyboardType="email-address" autoCapitalize="none"
-                />
-                <View style={{ height: 10 }} />
-                <TextInput
-                  value={password} onChangeText={setPassword}
-                  placeholder="Password"
-                  placeholderTextColor="rgba(255,245,247,0.4)"
-                  style={styles.input} secureTextEntry
-                />
-                <View style={{ height: 16 }} />
-                <PrimaryButton
-                  title="Enter" variant="gold"
-                  onPress={handleLogin} disabled={!canSubmit}
-                />
+                {/* Email */}
+                <View style={styles.inputRow}>
+                  <TextInput
+                    ref={emailRef}
+                    value={email}
+                    onChangeText={handleEmailChange}
+                    placeholder="Email"
+                    placeholderTextColor="rgba(255,245,247,0.4)"
+                    style={[styles.input, !!error && styles.inputError]}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    returnKeyType="next"
+                    textContentType="emailAddress"
+                    onSubmitEditing={() => passRef.current?.focus()}
+                  />
+                </View>
 
-                {/* Admin credentials helper */}
+                <View style={{ height: 10 }} />
+
+                {/* Password with eye toggle */}
+                <View style={styles.inputRow}>
+                  <TextInput
+                    ref={passRef}
+                    value={password}
+                    onChangeText={handlePassChange}
+                    placeholder="Password"
+                    placeholderTextColor="rgba(255,245,247,0.4)"
+                    style={[styles.input, styles.inputWithIcon, !!error && styles.inputError]}
+                    secureTextEntry={!showPass}
+                    returnKeyType="done"
+                    onSubmitEditing={handleLogin}
+                    textContentType="password"
+                  />
+                  <Pressable onPress={() => setShowPass((v) => !v)} style={styles.eyeBtn} hitSlop={12}>
+                    <EyeIcon visible={showPass} />
+                  </Pressable>
+                </View>
+
+                {/* Inline error */}
+                {!!error && (
+                  <View style={styles.errorWrap}>
+                    <Text style={styles.errorText}>⚠  {error}</Text>
+                  </View>
+                )}
+
+                {/* Forgot password */}
+                <Pressable onPress={handleForgotPassword} style={styles.forgotBtn}>
+                  <Text style={styles.forgotText}>Forgot password?</Text>
+                </Pressable>
+
+                <View style={{ height: 14 }} />
+
+                {loading ? (
+                  <View style={styles.loadingWrap}>
+                    <ActivityIndicator color={Colors.saffronGold} />
+                    <Text style={styles.loadingText}>Entering…</Text>
+                  </View>
+                ) : (
+                  <PrimaryButton
+                    title="Enter"
+                    variant="gold"
+                    onPress={handleLogin}
+                    disabled={!canSubmit}
+                  />
+                )}
+
+                {/* Admin hint */}
                 <Pressable onPress={() => setShowAdminHint((v) => !v)} style={styles.adminToggle}>
                   <Text style={styles.adminToggleText}>
                     {showAdminHint ? '▼' : '▶'}  Demo / admin access
@@ -148,6 +243,7 @@ export default function Login() {
                       onPress={() => {
                         setEmail('admin@ritualai.in');
                         setPassword('admin123');
+                        setError('');
                         try { Haptics.selectionAsync(); } catch {}
                       }}
                       style={styles.adminFillBtn}
@@ -161,7 +257,10 @@ export default function Login() {
 
             <Pressable onPress={() => router.replace('/(auth)/signup')} style={{ marginTop: 28 }}>
               <Text style={styles.linkText}>
-                New here?  <Text style={{ fontWeight: '700', textDecorationLine: 'underline' }}>Create an account</Text>
+                New here?{'  '}
+                <Text style={{ fontWeight: '700', textDecorationLine: 'underline' }}>
+                  Create an account
+                </Text>
               </Text>
             </Pressable>
           </ScrollView>
@@ -173,31 +272,89 @@ export default function Login() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scroll: { paddingHorizontal: 20, paddingVertical: 20, alignItems: 'center', minHeight: H - 80 },
+  scroll: { paddingHorizontal: 24, paddingVertical: 20, alignItems: 'center', minHeight: H - 80 },
   headerWrap: { alignItems: 'center', marginTop: 10, marginBottom: 20 },
   kicker: { ...Typography.label, color: Colors.saffronGold, marginBottom: 8 },
-  heading: { ...Typography.h1, color: Colors.lotusMist, textAlign: 'center', fontStyle: 'italic', fontWeight: '300' },
+  heading: {
+    ...Typography.h1,
+    color: Colors.lotusMist,
+    textAlign: 'center',
+    fontStyle: 'italic',
+    fontWeight: '300',
+  },
   sub: { ...Typography.body, color: Colors.auroraRose, textAlign: 'center', marginTop: 6, opacity: 0.85 },
   doorWrap: { alignItems: 'center', marginVertical: 16 },
   hintText: { color: Colors.saffronGold, fontSize: 15, fontStyle: 'italic', letterSpacing: 0.5 },
   formWrap: { width: '100%', maxWidth: 420, marginTop: 20 },
+  inputRow: { position: 'relative', width: '100%' },
   input: {
-    backgroundColor: 'rgba(255,245,247,0.1)', borderWidth: 1,
-    borderColor: 'rgba(232,168,124,0.4)', borderRadius: Radius.pill,
-    paddingHorizontal: 22, paddingVertical: 16, fontSize: 16,
-    color: Colors.lotusMist, textAlign: 'center',
+    backgroundColor: 'rgba(255,245,247,0.1)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(232,168,124,0.35)',
+    borderRadius: Radius.pill,
+    paddingHorizontal: 22,
+    paddingVertical: 16,
+    fontSize: 16,
+    color: Colors.lotusMist,
+    textAlign: 'center',
   },
-  adminToggle: { marginTop: 20, alignItems: 'center' },
-  adminToggleText: { color: 'rgba(232,168,124,0.8)', fontSize: 12 },
+  inputWithIcon: { paddingRight: 52 },
+  inputError: { borderColor: 'rgba(201,79,93,0.75)' },
+  eyeBtn: {
+    position: 'absolute',
+    right: 18,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 38,
+  },
+  errorWrap: {
+    marginTop: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 12,
+    backgroundColor: 'rgba(201,79,93,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(201,79,93,0.35)',
+  },
+  errorText: { color: '#f9b3bb', fontSize: 13, textAlign: 'center', fontWeight: '500' },
+  forgotBtn: { alignItems: 'flex-end', marginTop: 10, paddingRight: 6 },
+  forgotText: { color: 'rgba(232,168,124,0.65)', fontSize: 13 },
+  loadingWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingVertical: 14,
+    borderRadius: Radius.pill,
+    backgroundColor: 'rgba(232,168,124,0.12)',
+  },
+  loadingText: { color: Colors.saffronGold, fontSize: 16, fontStyle: 'italic' },
+  adminToggle: { marginTop: 22, alignItems: 'center' },
+  adminToggleText: { color: 'rgba(232,168,124,0.7)', fontSize: 12 },
   adminBox: {
-    marginTop: 10, padding: 14, backgroundColor: 'rgba(232,168,124,0.1)',
-    borderRadius: 14, borderWidth: 1, borderColor: 'rgba(232,168,124,0.3)',
+    marginTop: 10,
+    padding: 14,
+    backgroundColor: 'rgba(232,168,124,0.08)',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(232,168,124,0.25)',
   },
-  adminLabel: { fontSize: 9, fontWeight: '800', color: Colors.saffronGold, letterSpacing: 1.5, marginBottom: 2 },
+  adminLabel: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: Colors.saffronGold,
+    letterSpacing: 1.5,
+    marginBottom: 2,
+  },
   adminValue: { color: Colors.lotusMist, fontSize: 13, marginBottom: 8 },
   adminFillBtn: {
-    alignSelf: 'flex-start', paddingHorizontal: 14, paddingVertical: 6,
-    borderRadius: 999, backgroundColor: Colors.saffronGold,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: Colors.saffronGold,
   },
   adminFillText: { color: Colors.midnightPlum, fontWeight: '700', fontSize: 12 },
   linkText: { color: Colors.auroraRose, fontSize: 14, textAlign: 'center' },
