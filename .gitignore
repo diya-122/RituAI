@@ -14,3 +14,7 @@ yarn-error.*
 .DS_Store
 .env
 .env.*
+/venv/
+venv/
+**/venv/*
+__pycache__/
