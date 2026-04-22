@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "RituAI",
+    "slug": "ritual-ai",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "ritualai",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#2D1B2E"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.teamelle.ritualai"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#2D1B2E"
+      },
+      "package": "com.teamelle.ritualai"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router"
+    ],
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}
