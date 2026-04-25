@@ -1,3 +1,4 @@
+# Node / Expo
 node_modules/
 .expo/
 dist/
@@ -11,10 +12,17 @@ web-build/
 npm-debug.*
 yarn-debug.*
 yarn-error.*
-.DS_Store
-.env
-.env.*
-/venv/
+
+# Python
 venv/
+/venv/
 **/venv/*
 __pycache__/
+*.pyc
+
+# Environment
+.env
+.env.*
+
+# OS
+.DS_Store

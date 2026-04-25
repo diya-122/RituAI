@@ -27,7 +27,15 @@ const TABS: { id: Tab; label: string; emoji: string }[] = [
 export default function Admin() {
   const router = useRouter();
   const logout = useStore((s) => s.logout);
+  const user = useStore((s) => s.user);
+  const isAuthed = useStore((s) => s.isAuthed);
   const [tab, setTab] = useState<Tab>('overview');
+
+  React.useEffect(() => {
+    if (!isAuthed || user?.role !== 'ADMIN') {
+      router.replace('/(auth)/welcome');
+    }
+  }, [isAuthed, user?.role]);
 
   const handleLogout = () => {
     logout();
@@ -51,9 +59,6 @@ export default function Admin() {
             <Text style={s.heading} numberOfLines={1}>Operations</Text>
           </View>
           <View style={s.headerBtns}>
-            <Pressable onPress={() => router.back()} style={s.headerBtn}>
-              <Text style={s.headerBtnText}>← Back</Text>
-            </Pressable>
             <Pressable onPress={handleLogout} style={[s.headerBtn, { backgroundColor: Colors.danger }]}>
               <Text style={[s.headerBtnText, { color: '#fff' }]}>Logout</Text>
             </Pressable>

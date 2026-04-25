@@ -164,10 +164,10 @@ const mockScans = (): SkinScan[] => {
 };
 
 export const useStore = create<State>((set) => ({
-  isAuthed: false,
-  hasOnboarded: false,
-  hasSeenTutorial: false,
-  user: null,
+  isAuthed: true,
+  hasOnboarded: true,
+  hasSeenTutorial: true,
+  user: { name: 'Admin', email: 'admin@ritualai.in', role: 'ADMIN' },
 
   cycleDay: 14,
   currentPhase: 'ovulatory',
