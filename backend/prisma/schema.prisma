@@ -1,0 +1,49 @@
+generator client {
+  provider             = "prisma-client-py"
+  recursive_type_depth = 5
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id              Int        @id @default(autoincrement())
+  email           String     @unique
+  name            String?
+  lastPeriodStart DateTime?
+  avgCycleLength  Int        @default(28)
+  logs            DailyLog[]
+  scans           SkinScan[]
+}
+
+model DailyLog {
+  id          Int      @id @default(autoincrement())
+  date        DateTime @default(now())
+  bbtTemp     Float
+  lhRatio     Float
+  verdict     String
+  precautions String
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+model SkinScan {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
+  imageUrl    String
+  cycleDay    Int?
+  cyclePhase  String?
+  acneCount   Int
+  zones       Json
+  acneTypes   String[]
+  severity    String
+  rawAnalysis Json
+  lesions     Json
+  createdAt   DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
